@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Project Assistant</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 280px;
+      background: #1a1a1a;
+      border-right: 1px solid #2a2a2a;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px;
+      border-bottom: 1px solid #2a2a2a;
+    }
+
+    .sidebar-header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-header p {
+      font-size: 12px;
+      color: #888;
+    }
+
+    .sidebar-section {
+      padding: 12px 16px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+
+    .sidebar-item {
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #bbb;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-item:hover { background: #252525; }
+    .sidebar-item.active { background: #2a2a2a; color: #fff; }
+
+    .sidebar-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+      flex-shrink: 0;
+    }
+
+    .sidebar-item.active .dot { background: #6366f1; }
+
+    .sidebar-btn {
+      margin: 8px;
+      padding: 10px;
+      border: 1px dashed #333;
+      border-radius: 8px;
+      background: transparent;
+      color: #888;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .sidebar-btn:hover { border-color: #6366f1; color: #6366f1; }
+
+    .sidebar-bottom {
+      padding: 12px;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .sidebar-bottom-btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-memory {
+      background: #1e1b4b;
+      color: #a5b4fc;
+      margin-bottom: 6px;
+    }
+    .btn-memory:hover { background: #2e2860; }
+
+    .btn-organize {
+      background: #162016;
+      color: #86efac;
+    }
+    .btn-organize:hover { background: #1e3a1e; }
+
+    /* ── Main area ── */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      padding: 16px 24px;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #fff;
+    }
+
+    .topbar-subtitle {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* ── Chat area ── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      max-width: 75%;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: #6366f1;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 16px 16px 4px 16px;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      padding: 16px 20px;
+      border-radius: 16px 16px 16px 4px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .message.assistant h2 {
+      font-size: 15px;
+      margin: 12px 0 6px;
+      color: #fff;
+    }
+
+    .message.assistant h2:first-child { margin-top: 0; }
+
+    .message.assistant ul, .message.assistant ol {
+      margin-left: 20px;
+      margin-bottom: 8px;
+    }
+
+    .message.assistant li {
+      margin-bottom: 4px;
+    }
+
+    .message.assistant strong { color: #fff; }
+
+    .message.assistant p {
+      margin-bottom: 8px;
+    }
+
+    .message.assistant p:last-child { margin-bottom: 0; }
+
+    .tool-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #1e1b4b;
+      color: #a5b4fc;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      margin: 4px 4px 4px 0;
+    }
+
+    .tool-badges {
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .image-preview {
+      margin-top: 10px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #333;
+      max-width: 400px;
+    }
+
+    .image-preview img {
+      width: 100%;
+      display: block;
+    }
+
+    .image-preview a {
+      display: block;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #888;
+      background: #151515;
+      text-decoration: none;
+    }
+
+    .image-preview a:hover { color: #a5b4fc; }
+
+    .thinking {
+      align-self: flex-start;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .thinking .dots span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #555;
+      animation: bounce 1.4s ease-in-out infinite;
+    }
+
+    .thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    /* ── Input area ── */
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #333;
+      border-radius: 12px;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-row input:focus { border-color: #6366f1; }
+
+    .input-row input::placeholder { color: #555; }
+
+    .send-btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      background: #6366f1;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .send-btn:hover { background: #5558e6; }
+    .send-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    /* ── Welcome screen ── */
+    .welcome {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #555;
+    }
+
+    .welcome h2 {
+      font-size: 22px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .welcome p {
+      font-size: 14px;
+      max-width: 400px;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 16px;
+      padding: 28px;
+      width: 480px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal h2 {
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 20px;
+    }
+
+    .modal label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+
+    .modal label:first-of-type { margin-top: 0; }
+
+    .modal input, .modal textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0f0f0f;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .modal textarea { resize: vertical; min-height: 60px; }
+
+    .modal input:focus, .modal textarea:focus { border-color: #6366f1; }
+
+    .modal-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .btn-cancel { background: #2a2a2a; color: #aaa; }
+    .btn-cancel:hover { background: #333; }
+    .btn-create { background: #6366f1; color: #fff; }
+    .btn-create:hover { background: #5558e6; }
+
+    /* ── Memory panel ── */
+    .memory-section {
+      margin-bottom: 16px;
+    }
+
+    .memory-section h3 {
+      font-size: 13px;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .memory-section p {
+      font-size: 13px;
+      color: #bbb;
+      line-height: 1.6;
+      background: #0f0f0f;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #222;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #e0e0e0;
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { border-color: #22c55e; }
+    .toast.error { border-color: #ef4444; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #444; }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1>AI Project Assistant</h1>
+      <p>Chat &middot; Images &middot; Memory</p>
+    </div>
+
+    <div class="sidebar-section">Projects</div>
+    <div class="sidebar-list" id="project-list"></div>
+    <button class="sidebar-btn" onclick="showModal('project')">+ New Project</button>
+
+    <div class="sidebar-section">Conversations</div>
+    <div class="sidebar-list" id="conversation-list"></div>
+    <button class="sidebar-btn" id="new-conv-btn" onclick="showModal('conversation')" style="display:none">+ New Chat</button>
+
+    <div class="sidebar-bottom">
+      <button class="sidebar-bottom-btn btn-memory" id="memory-btn" onclick="showMemory()" style="display:none">
+        View Memory
+      </button>
+      <button class="sidebar-bottom-btn btn-organize" id="organize-btn" onclick="triggerOrganize()" style="display:none">
+        Organize Knowledge
+      </button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Select a project to begin</div>
+        <div class="topbar-subtitle" id="topbar-subtitle"></div>
+      </div>
+    </div>
+
+    <div class="welcome" id="welcome">
+      <div>
+        <h2>Welcome</h2>
+        <p>Create a project, start a conversation, and chat with Claude. He can generate images, analyze them, and remember everything.</p>
+      </div>
+    </div>
+
+    <div class="chat-area" id="chat-area" style="display:none"></div>
+
+    <div class="input-area" id="input-area" style="display:none">
+      <div class="input-row">
+        <input type="text" id="msg-input" placeholder="Type a message..." autocomplete="off" />
+        <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Project Modal -->
+  <div class="modal-overlay" id="project-modal">
+    <div class="modal">
+      <h2>New Project</h2>
+      <label>Title *</label>
+      <input type="text" id="proj-title" placeholder="Summer Campaign" />
+      <label>Description</label>
+      <textarea id="proj-desc" placeholder="What's this project about?"></textarea>
+      <label>Goals</label>
+      <textarea id="proj-goals" placeholder="What are you trying to achieve?"></textarea>
+      <label>Target Audience</label>
+      <input type="text" id="proj-audience" placeholder="Who is this for?" />
+      <label>Brand Guidelines</label>
+      <input type="text" id="proj-brand" placeholder="Visual style, tone, etc." />
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideModals()">Cancel</button>
+        <button class="btn-create" onclick="createProject()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Conversation Modal -->
+  <div class="modal-overlay" id="conv-modal">
+    <div class="modal">
+      <h2>New Conversation</h2>
+      <label>Title</label>
+      <input type="text" id="conv-title" placeholder="Brainstorming session" />
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideModals()">Cancel</button>
+        <button class="btn-create" onclick="createConversation()">Start Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Memory Modal -->
+  <div class="modal-overlay" id="memory-modal">
+    <div class="modal">
+      <h2>Project Memory</h2>
+      <div id="memory-content"><p style="color:#666">Loading...</p></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="hideModals()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const API = '';
+    let currentProject = null;
+    let currentConversation = null;
+    let sending = false;
+
+    // ── API helpers ──
+
+    async function api(method, path, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(API + path, opts);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Request failed (${res.status})`);
+      }
+      return res.json();
+    }
+
+    // ── Toast ──
+
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show ' + type;
+      setTimeout(() => el.className = 'toast', 3000);
+    }
+
+    // ── Modals ──
+
+    function showModal(type) {
+      hideModals();
+      if (type === 'project') document.getElementById('project-modal').classList.add('show');
+      if (type === 'conversation') document.getElementById('conv-modal').classList.add('show');
+    }
+
+    function hideModals() {
+      document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('show'));
+    }
+
+    // click outside modal to close
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) hideModals();
+      });
+    });
+
+    // ── Projects ──
+
+    async function loadProjects() {
+      try {
+        const projects = await api('GET', '/projects');
+        const list = document.getElementById('project-list');
+        list.innerHTML = '';
+        projects.forEach(p => {
+          const el = document.createElement('div');
+          el.className = 'sidebar-item' + (currentProject && currentProject.id === p.id ? ' active' : '');
+          el.innerHTML = `<span class="dot"></span>${esc(p.title)}`;
+          el.onclick = () => selectProject(p);
+          list.appendChild(el);
+        });
+      } catch (e) {
+        toast('Failed to load projects', 'error');
+      }
+    }
+
+    async function createProject() {
+      const title = document.getElementById('proj-title').value.trim();
+      if (!title) return toast('Title is required', 'error');
+
+      try {
+        const p = await api('POST', '/projects', {
+          title,
+          description: document.getElementById('proj-desc').value.trim() || null,
+          goals: document.getElementById('proj-goals').value.trim() || null,
+          target_audience: document.getElementById('proj-audience').value.trim() || null,
+          brand_guidelines: document.getElementById('proj-brand').value.trim() || null,
+        });
+        hideModals();
+        // clear form
+        ['proj-title', 'proj-desc', 'proj-goals', 'proj-audience', 'proj-brand'].forEach(id => document.getElementById(id).value = '');
+        toast('Project created!', 'success');
+        await loadProjects();
+        selectProject(p);
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    async function selectProject(p) {
+      currentProject = p;
+      currentConversation = null;
+      document.getElementById('topbar-title').textContent = p.title;
+      document.getElementById('topbar-subtitle').textContent = p.goals || p.description || '';
+      document.getElementById('new-conv-btn').style.display = '';
+      document.getElementById('memory-btn').style.display = '';
+      document.getElementById('organize-btn').style.display = '';
+      document.getElementById('welcome').style.display = 'flex';
+      document.getElementById('chat-area').style.display = 'none';
+      document.getElementById('input-area').style.display = 'none';
+      loadProjects();
+      loadConversations();
+    }
+
+    // ── Conversations ──
+
+    async function loadConversations() {
+      if (!currentProject) return;
+      try {
+        const convs = await api('GET', `/projects/${currentProject.id}/conversations`);
+        const list = document.getElementById('conversation-list');
+        list.innerHTML = '';
+        convs.forEach(c => {
+          const el = document.createElement('div');
+          el.className = 'sidebar-item' + (currentConversation && currentConversation.id === c.id ? ' active' : '');
+          el.innerHTML = `<span class="dot"></span>${esc(c.title || 'Untitled')}`;
+          el.onclick = () => selectConversation(c);
+          list.appendChild(el);
+        });
+      } catch (e) {
+        toast('Failed to load conversations', 'error');
+      }
+    }
+
+    async function createConversation() {
+      if (!currentProject) return;
+      const title = document.getElementById('conv-title').value.trim() || 'New Chat';
+      try {
+        const c = await api('POST', `/projects/${currentProject.id}/conversations`, { title });
+        hideModals();
+        document.getElementById('conv-title').value = '';
+        toast('Chat started!', 'success');
+        await loadConversations();
+        selectConversation(c);
+      } catch (e) {
+        toast(e.message, 'error');
+      }
+    }
+
+    async function selectConversation(c) {
+      currentConversation = c;
+      document.getElementById('welcome').style.display = 'none';
+      document.getElementById('chat-area').style.display = 'flex';
+      document.getElementById('input-area').style.display = '';
+      document.getElementById('topbar-title').textContent = c.title || 'Chat';
+      document.getElementById('topbar-subtitle').textContent = currentProject.title;
+      loadConversations();
+      loadMessages();
+      document.getElementById('msg-input').focus();
+    }
+
+    // ── Messages ──
+
+    async function loadMessages() {
+      if (!currentConversation) return;
+      try {
+        const msgs = await api('GET', `/conversations/${currentConversation.id}/messages`);
+        const area = document.getElementById('chat-area');
+        area.innerHTML = '';
+        msgs.forEach(m => {
+          if (m.role === 'tool') return; // skip raw tool messages
+          if (m.role === 'user') {
+            appendMessage('user', m.content);
+          } else if (m.role === 'assistant' && m.content) {
+            appendMessage('assistant', m.content, m.tool_calls);
+          }
+        });
+        area.scrollTop = area.scrollHeight;
+      } catch (e) {
+        toast('Failed to load messages', 'error');
+      }
+    }
+
+    function appendMessage(role, content, toolCalls, images) {
+      const area = document.getElementById('chat-area');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+
+      let html = '';
+
+      // tool badges
+      if (toolCalls && toolCalls.length) {
+        html += '<div class="tool-badges">';
+        toolCalls.forEach(tc => {
+          const name = tc.name || tc.tool || 'tool';
+          html += `<span class="tool-badge">⚡ ${esc(name)}</span>`;
+        });
+        html += '</div>';
+      }
+
+      if (role === 'assistant') {
+        html += renderMarkdown(content || '');
+      } else {
+        html += esc(content || '');
+      }
+
+      // images
+      if (images && images.length) {
+        images.forEach(img => {
+          html += `<div class="image-preview">
+            <img src="${esc(img.url)}" alt="Generated image" loading="lazy" />
+            <a href="${esc(img.url)}" target="_blank">Open full size ↗</a>
+          </div>`;
+        });
+      }
+
+      div.innerHTML = html;
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+      return div;
+    }
+
+    function showThinking() {
+      const area = document.getElementById('chat-area');
+      const div = document.createElement('div');
+      div.className = 'thinking';
+      div.id = 'thinking-indicator';
+      div.innerHTML = '<div class="dots"><span></span><span></span><span></span></div> Claude is thinking...';
+      area.appendChild(div);
+      area.scrollTop = area.scrollHeight;
+    }
+
+    function hideThinking() {
+      const el = document.getElementById('thinking-indicator');
+      if (el) el.remove();
+    }
+
+    // ── Send message ──
+
+    async function sendMessage() {
+      if (sending || !currentConversation) return;
+      const input = document.getElementById('msg-input');
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      input.value = '';
+      sending = true;
+      document.getElementById('send-btn').disabled = true;
+
+      appendMessage('user', msg);
+      showThinking();
+
+      try {
+        const res = await api('POST', `/conversations/${currentConversation.id}/chat`, { message: msg });
+        hideThinking();
+
+        const toolCalls = res.tool_calls_made || [];
+        const images = res.images_generated || [];
+        appendMessage('assistant', res.reply, toolCalls, images);
+      } catch (e) {
+        hideThinking();
+        toast('Failed to send: ' + e.message, 'error');
+      } finally {
+        sending = false;
+        document.getElementById('send-btn').disabled = false;
+        document.getElementById('msg-input').focus();
+      }
+    }
+
+    // enter to send
+    document.getElementById('msg-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // ── Memory ──
+
+    async function showMemory() {
+      if (!currentProject) return;
+      document.getElementById('memory-modal').classList.add('show');
+      document.getElementById('memory-content').innerHTML = '<p style="color:#666">Loading...</p>';
+
+      try {
+        const data = await api('GET', `/projects/${currentProject.id}/memory`);
+        const memories = data.memories || [];
+        if (!memories.length) {
+          document.getElementById('memory-content').innerHTML = '<p style="color:#666">No memories yet. Chat with Claude or run the organize agent first.</p>';
+          return;
+        }
+        let html = '';
+        memories.forEach(m => {
+          html += `<div class="memory-section">
+            <h3>${esc(m.category.replace(/_/g, ' '))}</h3>
+            <p>${esc(m.content)}</p>
+          </div>`;
+        });
+        document.getElementById('memory-content').innerHTML = html;
+      } catch (e) {
+        document.getElementById('memory-content').innerHTML = `<p style="color:#ef4444">${esc(e.message)}</p>`;
+      }
+    }
+
+    // ── Organize Agent ──
+
+    async function triggerOrganize() {
+      if (!currentProject) return;
+      document.getElementById('organize-btn').disabled = true;
+      document.getElementById('organize-btn').textContent = 'Organizing...';
+
+      try {
+        const task = await api('POST', `/projects/${currentProject.id}/agents/organize`);
+        toast('Organize agent started!', 'success');
+
+        // poll for completion
+        const taskId = task.task_id;
+        const poll = setInterval(async () => {
+          try {
+            const status = await api('GET', `/agent-tasks/${taskId}`);
+            if (status.status === 'completed') {
+              clearInterval(poll);
+              document.getElementById('organize-btn').disabled = false;
+              document.getElementById('organize-btn').textContent = 'Organize Knowledge';
+              toast('Knowledge organized!', 'success');
+            } else if (status.status === 'failed') {
+              clearInterval(poll);
+              document.getElementById('organize-btn').disabled = false;
+              document.getElementById('organize-btn').textContent = 'Organize Knowledge';
+              toast('Organize failed: ' + (status.error || 'unknown'), 'error');
+            }
+          } catch (e) {
+            clearInterval(poll);
+            document.getElementById('organize-btn').disabled = false;
+            document.getElementById('organize-btn').textContent = 'Organize Knowledge';
+          }
+        }, 3000);
+      } catch (e) {
+        document.getElementById('organize-btn').disabled = false;
+        document.getElementById('organize-btn').textContent = 'Organize Knowledge';
+        toast(e.message, 'error');
+      }
+    }
+
+    // ── Helpers ──
+
+    function esc(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function renderMarkdown(text) {
+      // basic markdown → html
+      let html = esc(text);
+
+      // headers
+      html = html.replace(/^### (.+)$/gm, '<h3 style="font-size:14px;color:#fff;margin:10px 0 4px">$1</h3>');
+      html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+
+      // bold
+      html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      // checkmarks
+      html = html.replace(/✅/g, '<span style="color:#22c55e">✅</span>');
+      html = html.replace(/❌/g, '<span style="color:#ef4444">❌</span>');
+
+      // bullet lists
+      html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+      html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+
+      // line breaks
+      html = html.replace(/\n\n/g, '</p><p>');
+      html = html.replace(/\n/g, '<br>');
+
+      return '<p>' + html + '</p>';
+    }
+
+    // ── Init ──
+    loadProjects();
+  </script>
+
+</body>
+</html>
